@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Demos — mortings</title>
+<meta name="description" content="A small collection of PIM and e-commerce demos by mortings." />
+<style>
+  :root {
+    --bg: #fafafa;
+    --fg: #111;
+    --muted: #555;
+    --card: #fff;
+    --border: #e5e5e5;
+    --accent: #0b66ff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e0f12;
+      --fg: #f3f3f3;
+      --muted: #a0a4ad;
+      --card: #16181d;
+      --border: #2a2d34;
+      --accent: #6aa1ff;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 64px 24px 96px;
+  }
+  header { margin-bottom: 48px; }
+  h1 {
+    font-size: 32px;
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+  }
+  header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 17px;
+  }
+  header a { color: var(--accent); text-decoration: none; }
+  header a:hover { text-decoration: underline; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card h2 {
+    font-size: 18px;
+    margin: 0 0 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: -0.01em;
+  }
+  .card p {
+    margin: 0 0 20px;
+    color: var(--muted);
+    font-size: 14.5px;
+    flex: 1;
+  }
+  .links {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .demo {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14.5px;
+  }
+  .demo:hover { text-decoration: underline; }
+  .source {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+  }
+  .source:hover { color: var(--fg); }
+
+  footer {
+    margin-top: 64px;
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Demos</h1>
+    <p>A few experiments by <a href="https://github.com/mortings">@mortings</a> — mostly around PIM and the agentic future of e-commerce.</p>
+  </header>
+
+  <section class="grid">
+
+    <article class="card">
+      <h2>supplier-onboarding</h2>
+      <p>Bluestone PIM — Drop. CSV/JSON/XLSX import wizard with auto-detect schema and smart attribute mapping.</p>
+      <div class="links">
+        <a class="demo" href="https://mortings.github.io/supplier-onboarding/">View demo →</a>
+        <a class="source" href="https://github.com/mortings/supplier-onboarding">Source ↗</a>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>pim-webpage</h2>
+      <p>Bluestone PIM — The Agentic PIM. Marketing site for an AI-agent-powered product information platform.</p>
+      <div class="links">
+        <a class="demo" href="https://mortings.github.io/pim-webpage/">View demo →</a>
+        <a class="source" href="https://github.com/mortings/pim-webpage">Source ↗</a>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>pim-agent</h2>
+      <p>The AI PIM. Interactive PIM UI with AI-driven enrichment, quality reports, and catalog tasks.</p>
+      <div class="links">
+        <a class="demo" href="https://mortings.github.io/pim-agent/">View demo →</a>
+        <a class="source" href="https://github.com/mortings/pim-agent">Source ↗</a>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>ecommercefuture</h2>
+      <p>E-Commerce Stack: Today vs. Agentic Future. An infographic comparing the current and emerging stacks.</p>
+      <div class="links">
+        <a class="demo" href="https://mortings.github.io/ecommercefuture/ecommerce-stack-infographic.html">View demo →</a>
+        <a class="source" href="https://github.com/mortings/ecommercefuture">Source ↗</a>
+      </div>
+    </article>
+
+  </section>
+
+  <footer>github.com/mortings/demos</footer>
+</main>
+</body>
+</html>
