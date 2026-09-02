@@ -3,9 +3,14 @@ import { AsrError, languageParam, normaliseLanguage, readErrorBody, wavBlob, typ
 export interface ElevenLabsOptions {
   apiKey: string;
   model: string;
+  /** Vocabulary boosted through Scribe keyterms (max 100, each ≤ 5 words / 50 chars). */
+  keyterms: string[];
 }
 
-/** ElevenLabs Scribe: very strong on Norwegian and other smaller languages. */
+/**
+ * ElevenLabs Scribe v2: the most accurate option on Norwegian by a wide margin
+ * (about 3 % word error rate on FLEURS versus about 10 % for Whisper large-v3).
+ */
 export function createElevenLabsTranscriber(opts: ElevenLabsOptions): Transcriber {
   return {
     name: 'ElevenLabs',
@@ -15,8 +20,14 @@ export function createElevenLabsTranscriber(opts: ElevenLabsOptions): Transcribe
       form.append('model_id', opts.model);
       form.append('tag_audio_events', 'false');
       form.append('diarize', 'false');
+      form.append('timestamps_granularity', 'none');
       const language = languageParam(req.languageMode);
       if (language) form.append('language_code', language);
+      for (const term of opts.keyterms
+        .filter((t) => t.length <= 50 && t.split(/\s+/).length <= 5)
+        .slice(0, 100)) {
+        form.append('keyterms', term);
+      }
       const res = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
         method: 'POST',
         headers: { 'xi-api-key': opts.apiKey },

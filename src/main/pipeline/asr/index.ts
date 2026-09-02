@@ -29,7 +29,7 @@ export function createTranscriber(settings: Settings, secret: SecretLookup): Tra
       return createDeepgramTranscriber({ apiKey: key, model, keyterms: dictionaryTerms(settings.dictionary) });
     case 'elevenlabs':
       if (!key) return null;
-      return createElevenLabsTranscriber({ apiKey: key, model });
+      return createElevenLabsTranscriber({ apiKey: key, model, keyterms: dictionaryTerms(settings.dictionary) });
     case 'custom':
       if (!settings.asr.customBaseUrl.trim()) return null;
       return createOpenAiCompatibleTranscriber({ name: 'Custom', baseUrl: settings.asr.customBaseUrl.trim(), apiKey: key, model });

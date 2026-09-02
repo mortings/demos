@@ -10,22 +10,22 @@ const api = window.flyt;
 const ASR_INFO: Record<AsrProvider, { label: string; hint: string; keyUrl: string | null }> = {
   openai: {
     label: 'OpenAI',
-    hint: 'gpt-4o-transcribe is strong in both English and Norwegian and accepts vocabulary hints. Good default.',
+    hint: 'gpt-transcribe is OpenAI\'s current model: strong in English and Norwegian, accepts vocabulary hints. The older gpt-4o-transcribe and whisper-1 shut down on 26 Feb 2027.',
     keyUrl: 'https://platform.openai.com/api-keys',
   },
   groq: {
     label: 'Groq',
-    hint: 'Whisper large-v3 served extremely fast. Solid Norwegian, lowest latency of the hosted options.',
+    hint: 'Whisper large-v3 served extremely fast (a few hundred milliseconds). Weaker on Norwegian than Scribe v2 or gpt-transcribe.',
     keyUrl: 'https://console.groq.com/keys',
   },
   deepgram: {
     label: 'Deepgram',
-    hint: 'Nova-3 is very fast and excellent for English. Check that your plan lists Norwegian ("no") before relying on it.',
+    hint: 'Nova-3 is the fastest hosted option (hundreds of times real time) and excellent for English; Norwegian is supported but less proven than Scribe v2.',
     keyUrl: 'https://console.deepgram.com/',
   },
   elevenlabs: {
     label: 'ElevenLabs Scribe',
-    hint: 'Best Norwegian accuracy in our testing, slightly slower. Recommended if you mostly dictate in Norwegian.',
+    hint: 'Scribe v2 is the most accurate choice for Norwegian (about 3 % word error rate versus about 10 % for Whisper) and top-tier in English, at roughly the same speed as OpenAI. Your vocabulary is passed as keyterms.',
     keyUrl: 'https://elevenlabs.io/app/settings/api-keys',
   },
   custom: {
