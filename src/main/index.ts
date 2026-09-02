@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { BrowserWindow, app, ipcMain, safeStorage, session, shell } from 'electron';
+import { BrowserWindow, app, ipcMain, safeStorage, session, shell, systemPreferences } from 'electron';
 import { DEFAULT_SETTINGS } from '../shared/defaults';
 import {
   IPC,
@@ -64,6 +64,7 @@ async function main(): Promise<void> {
   let micOpen = false;
   let hotkeysPaused = false;
   let status: AppStatus = {
+    devMode: !app.isPackaged,
     recording: false,
     mode: null,
     hotkeysActive: false,
@@ -101,12 +102,15 @@ async function main(): Promise<void> {
     secret,
     insert: async (text) => {
       try {
-        await insertText(text, { restoreClipboard: settings().dictation.restoreClipboard });
-        if (process.platform === 'darwin') reportAutomation(true);
+        const method = await insertText(text, {
+          restoreClipboard: settings().dictation.restoreClipboard,
+          keyTap: () => hotkeys.pasteKeystroke(),
+        });
+        if (process.platform === 'darwin' && method === 'os') reportAutomation(true);
       } catch (err) {
         if (process.platform === 'darwin') reportAutomation(false);
         throw new Error(
-          `Could not paste into the active app (${err instanceof Error ? err.message : String(err)}). Check Accessibility and Automation permissions in Settings → Setup.`,
+          `Could not paste into the active app (${err instanceof Error ? err.message : String(err)}). Check the Accessibility permission in Settings → Setup.`,
         );
       }
     },
@@ -147,7 +151,11 @@ async function main(): Promise<void> {
   hotkeys.on('error', (err: Error) => {
     log('hotkey hook failed', err.message);
     reportInputMonitoring(false);
-    setStatus({ hotkeysActive: false, lastError: 'Global hotkeys unavailable. On macOS grant Input Monitoring and Accessibility to Flyt, then restart it.' });
+    const who = app.isPackaged ? 'Flyt' : '"Electron" (Flyt running from source)';
+    setStatus({
+      hotkeysActive: false,
+      lastError: `Global hotkeys unavailable. On macOS grant Accessibility and Input Monitoring to ${who}; Flyt retries automatically.`,
+    });
   });
 
   const applyHotkeys = () => {
@@ -157,10 +165,32 @@ async function main(): Promise<void> {
   };
 
   applyHotkeys();
-  const hookOk = hotkeys.start();
-  reportInputMonitoring(hookOk);
-  setStatus({ hotkeysActive: hookOk });
-  tray.update({ hotkeysOk: hookOk });
+  const startHook = (): boolean => {
+    const ok = hotkeys.start();
+    reportInputMonitoring(ok);
+    setStatus({ hotkeysActive: ok, ...(ok ? { lastError: null } : {}) });
+    tray.update({ hotkeysOk: ok });
+    return ok;
+  };
+  const accessibilityTrusted = () => process.platform !== 'darwin' || systemPreferences.isTrustedAccessibilityClient(false);
+  if (!accessibilityTrusted()) {
+    // Shows the system dialog that leads straight to the Accessibility pane.
+    systemPreferences.isTrustedAccessibilityClient(true);
+  }
+  if (!startHook()) {
+    // Keep trying: on macOS the hook can be created as soon as the user
+    // grants Accessibility, no restart needed.
+    let attempts = 0;
+    const retry = setInterval(() => {
+      if (hotkeys.isRunning) return clearInterval(retry);
+      if (!accessibilityTrusted()) return;
+      if (process.platform !== 'darwin' && ++attempts > 10) return clearInterval(retry);
+      if (startHook()) {
+        clearInterval(retry);
+        log('hotkey hook started after permission was granted');
+      }
+    }, 3000);
+  }
 
   // ------------------------------------------------------------------- engine
   const configureEngine = () => {
@@ -211,9 +241,12 @@ async function main(): Promise<void> {
       if (g.showInDock) app.dock?.show();
       else app.dock?.hide();
     }
-    if (process.platform !== 'linux') {
+    // Login items need a real app bundle; skip when running from source.
+    if (process.platform !== 'linux' && app.isPackaged) {
       try {
-        app.setLoginItemSettings({ openAtLogin: g.launchAtLogin });
+        if (app.getLoginItemSettings().openAtLogin !== g.launchAtLogin) {
+          app.setLoginItemSettings({ openAtLogin: g.launchAtLogin });
+        }
       } catch (err) {
         log('login item failed', err);
       }

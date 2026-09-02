@@ -197,6 +197,8 @@ export interface OverlayState {
 }
 
 export interface AppStatus {
+  /** Running unpackaged (`electron .`): macOS shows the app as "Electron". */
+  devMode: boolean;
   recording: boolean;
   mode: DictationMode | null;
   hotkeysActive: boolean;
