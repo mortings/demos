@@ -1,0 +1,45 @@
+appId: com.mortings.flyt
+productName: Flyt
+copyright: Copyright © 2026 Morten Nilsen
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**/*
+  - package.json
+  - "!**/*.map"
+asarUnpack:
+  - "**/node_modules/uiohook-napi/**"
+npmRebuild: true
+mac:
+  category: public.app-category.productivity
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+    - target: zip
+      arch: [arm64, x64]
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    # Menubar-only app: no Dock icon.
+    LSUIElement: true
+    NSMicrophoneUsageDescription: Flyt listens to your microphone while you hold the dictation key so it can turn your speech into text.
+    NSAppleEventsUsageDescription: Flyt uses System Events to paste the dictated text into the app you are typing in.
+    NSInputMonitoringUsageDescription: Flyt watches for the dictation hotkey so you can dictate into any app.
+dmg:
+  sign: false
+win:
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+linux:
+  category: Utility
+  target:
+    - AppImage
+    - deb
