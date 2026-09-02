@@ -1,5 +1,5 @@
 import { nativeImage, type NativeImage } from 'electron';
-import { encodePng, renderMic } from './icon-render';
+import { encodePng, renderAppIcon, renderMic } from './icon-render';
 
 export function trayIcon(recording: boolean): NativeImage {
   const color: [number, number, number] = recording ? [235, 68, 68] : [0, 0, 0];
@@ -13,5 +13,5 @@ export function trayIcon(recording: boolean): NativeImage {
 }
 
 export function appIcon(size = 512): NativeImage {
-  return nativeImage.createFromBuffer(encodePng(size, size, renderMic(size, { color: [255, 255, 255], background: [37, 99, 235], inset: 0.2 })));
+  return nativeImage.createFromBuffer(encodePng(size, size, renderAppIcon(size)));
 }

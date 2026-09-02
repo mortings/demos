@@ -42,7 +42,24 @@ The first launch opens Settings → Setup. Work through it:
 
 During development, `npm run dev` rebuilds and launches; `npm test` runs the unit and integration tests; `npm run typecheck` checks both TypeScript projects.
 
-## Package
+## Install as a real Mac app
+
+Running `npm start` uses the bare Electron binary, so macOS calls the app "Electron". To get a proper `Flyt.app` with its own name and icon in Applications:
+
+```bash
+npm run install:mac
+```
+
+That builds the app for your Mac's architecture, ad-hoc signs it so Apple Silicon will launch it, copies it to `/Applications/Flyt.app` and opens it. Then:
+
+- Press Ctrl+C in any Terminal still running the development copy; only one Flyt can run at a time.
+- Grant Microphone and Accessibility to **Flyt** (the installed app counts as a new app) in Settings → Setup.
+- Paste your API keys again; they are stored per app in the Keychain. Settings, vocabulary and history carry over.
+- Turn on "Launch at login" under General if you want it always there.
+
+Without an Apple Developer ID the signature is ad-hoc, which has one side effect: macOS forgets the Accessibility and Microphone grants every time you rebuild and reinstall. Set `CSC_NAME` to your Developer ID Application identity before building and electron-builder signs it properly, and the grants stick.
+
+### Installers for others
 
 ```bash
 npm run dist:mac     # .dmg and .zip for arm64 + x64 in release/
@@ -50,7 +67,7 @@ npm run dist:win     # NSIS installer
 npm run dist:linux   # AppImage + deb
 ```
 
-Signing/notarisation is left to your Apple Developer account (see `electron-builder.yml`; the entitlements already include microphone and Apple Events).
+A downloaded unsigned app is blocked by Gatekeeper; recipients right-click → Open the first time, or you notarise it with your Developer ID (see `electron-builder.yml`; the entitlements already include microphone and Apple Events).
 
 ## Choosing providers
 

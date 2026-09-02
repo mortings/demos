@@ -142,3 +142,61 @@ export function renderMic(size: number, opts: GlyphOptions): Uint8Array {
   }
   return rgba;
 }
+
+/**
+ * macOS app icon: the rounded square sits on Apple's grid (about 82 % of the
+ * canvas with the Big Sur corner radius), on a vertical blue gradient, with a
+ * soft shadow underneath. The mic glyph is drawn inside the square.
+ */
+export function renderAppIcon(size: number): Uint8Array {
+  const rgba = new Uint8Array(size * size * 4);
+  const ss = 3;
+  const pixel = 1 / size;
+  const half = 0.41; // 82 % of the canvas
+  const radius = 0.185 * 2 * half; // Apple's ~22.5 % of the side
+  const top: [number, number, number] = [82, 139, 255];
+  const bottom: [number, number, number] = [29, 78, 216];
+  const glyphInset = 0.5 - half + 0.2 * 2 * half; // glyph occupies ~60 % of the square
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      let square = 0;
+      let glyph = 0;
+      let shadow = 0;
+      for (let sy = 0; sy < ss; sy++) {
+        for (let sx = 0; sx < ss; sx++) {
+          const u = (x + (sx + 0.5) / ss) / size;
+          const v = (y + (sy + 0.5) / ss) / size;
+          square += coverage(sdRoundedBox(u, v, 0.5, 0.5, half, half, radius), pixel);
+          // Shadow: offset down, soft 3 % falloff.
+          const ds = sdRoundedBox(u, v, 0.5, 0.5 + 0.02, half, half, radius);
+          shadow += Math.max(0, Math.min(1, 1 - ds / 0.035));
+          const gu = (u - 0.5) / (1 - 2 * glyphInset) + 0.5;
+          const gv = (v - 0.5) / (1 - 2 * glyphInset) + 0.5;
+          glyph += coverage(micDistance(gu, gv) * (1 - 2 * glyphInset), pixel);
+        }
+      }
+      square /= ss * ss;
+      glyph /= ss * ss;
+      shadow /= ss * ss;
+      const t = Math.max(0, Math.min(1, (y / size - (0.5 - half)) / (2 * half)));
+      const bg = [
+        Math.round(top[0] + (bottom[0] - top[0]) * t),
+        Math.round(top[1] + (bottom[1] - top[1]) * t),
+        Math.round(top[2] + (bottom[2] - top[2]) * t),
+      ];
+      const i = (y * size + x) * 4;
+      // Composite: shadow, then square (with glyph), over transparency.
+      const shadowAlpha = shadow * 0.28 * (1 - square);
+      const r = bg[0]! + (255 - bg[0]!) * glyph;
+      const g = bg[1]! + (255 - bg[1]!) * glyph;
+      const b = bg[2]! + (255 - bg[2]!) * glyph;
+      const alpha = square + shadowAlpha;
+      if (alpha <= 0) continue;
+      rgba[i] = Math.round((r * square + 0 * shadowAlpha) / alpha);
+      rgba[i + 1] = Math.round((g * square + 0 * shadowAlpha) / alpha);
+      rgba[i + 2] = Math.round((b * square + 0 * shadowAlpha) / alpha);
+      rgba[i + 3] = Math.round(255 * Math.min(1, alpha));
+    }
+  }
+  return rgba;
+}
