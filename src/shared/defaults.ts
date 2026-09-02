@@ -60,8 +60,17 @@ export const ASR_MODEL_UPGRADES: Record<string, string> = {
 
 export const LLM_DEFAULT_MODELS = {
   anthropic: 'claude-opus-5',
-  'openai-compatible': 'gpt-4.1-mini',
+  'openai-compatible': 'gpt-5.4-mini',
 } as const;
+
+/** Suggestions for the OpenAI-compatible cleanup model field. */
+export const OPENAI_COMPAT_MODEL_OPTIONS: string[] = ['gpt-5.4-mini', 'gpt-5.4-nano', 'gpt-5.4', 'mistral-small-latest', 'llama3.2', 'qwen3'];
+
+export const LLM_MODEL_UPGRADES: Record<string, string> = {
+  'gpt-4.1-mini': 'gpt-5.4-mini',
+  'gpt-4.1-nano': 'gpt-5.4-nano',
+  'gpt-4o-mini': 'gpt-5.4-mini',
+};
 
 export const ANTHROPIC_MODEL_OPTIONS: { id: string; label: string }[] = [
   { id: 'claude-opus-5', label: 'Claude Opus 5 (best quality)' },

@@ -25,12 +25,17 @@ describe('SettingsStore', () => {
     const file = tmpFile();
     fs.writeFileSync(
       file,
-      JSON.stringify({ asr: { models: { openai: 'gpt-4o-transcribe', elevenlabs: 'scribe_v1', groq: 'whisper-large-v3-turbo' } } }),
+      JSON.stringify({
+        asr: { models: { openai: 'gpt-4o-transcribe', elevenlabs: 'scribe_v1', groq: 'whisper-large-v3-turbo' } },
+        llm: { models: { 'openai-compatible': 'gpt-4.1-mini' } },
+      }),
     );
     const store = new SettingsStore(file);
     expect(store.get().asr.models.openai).toBe('gpt-transcribe');
     expect(store.get().asr.models.elevenlabs).toBe('scribe_v2');
     expect(store.get().asr.models.groq).toBe('whisper-large-v3-turbo');
+    expect(store.get().llm.models['openai-compatible']).toBe('gpt-5.4-mini');
+    expect(store.get().llm.models.anthropic).toBe('claude-opus-5');
   });
 
   it('rejects invalid updates and repairs a broken file section by section', () => {

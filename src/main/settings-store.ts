@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ASR_MODEL_UPGRADES, DEFAULT_SETTINGS } from '../shared/defaults';
+import { ASR_MODEL_UPGRADES, DEFAULT_SETTINGS, LLM_MODEL_UPGRADES } from '../shared/defaults';
 import { SettingsSchema, type DeepPartial, type Settings } from '../shared/types';
 import { deepMerge } from '../shared/util';
 
@@ -74,13 +74,16 @@ export class SettingsStore extends EventEmitter {
 
 /** Forward-compatible fixes applied to whatever was on disk. */
 export function migrate(settings: Settings): Settings {
-  const models = settings.asr?.models;
-  if (models && typeof models === 'object') {
-    for (const [provider, model] of Object.entries(models)) {
-      const upgrade = ASR_MODEL_UPGRADES[model];
-      if (upgrade) (models as Record<string, string>)[provider] = upgrade;
+  const upgradeAll = (models: unknown, upgrades: Record<string, string>) => {
+    if (!models || typeof models !== 'object') return;
+    const record = models as Record<string, string>;
+    for (const [provider, model] of Object.entries(record)) {
+      const upgrade = upgrades[model];
+      if (upgrade) record[provider] = upgrade;
     }
-  }
+  };
+  upgradeAll(settings.asr?.models, ASR_MODEL_UPGRADES);
+  upgradeAll(settings.llm?.models, LLM_MODEL_UPGRADES);
   return settings;
 }
 
