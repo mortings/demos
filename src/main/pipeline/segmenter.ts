@@ -36,7 +36,7 @@ export const DEFAULT_SEGMENTER: SegmenterOptions = {
   sampleRate: 16000,
   frameMs: 20,
   preRollMs: 400,
-  postRollMs: 450,
+  postRollMs: 400,
   pauseMs: 900,
   minSegmentMs: 1500,
   maxSegmentMs: 45000,
@@ -206,7 +206,12 @@ export class Segmenter {
       }
     } else if (this.stateValue === 'draining') {
       this.drainMs += frameMs;
-      if (this.drainMs >= this.opts.postRollMs) {
+      // The post-roll exists to catch the tail of a word cut off by an early
+      // key release. If the speaker already went quiet before releasing,
+      // there is nothing to wait for: finish on the next frame or two.
+      const sinceLastLoud = this.lastLoudMs === null ? Number.POSITIVE_INFINITY : this.clockMs - this.lastLoudMs;
+      const done = this.drainMs >= this.opts.postRollMs || (this.drainMs >= 2 * frameMs && sinceLastLoud >= this.opts.postRollMs);
+      if (done) {
         if (this.segSpeechMs >= this.opts.minSpeechMs) events.push(this.cut(true));
         events.push({ type: 'stopped', segments: this.index, totalSpeechMs: this.totalSpeechMs });
         this.stateValue = 'idle';

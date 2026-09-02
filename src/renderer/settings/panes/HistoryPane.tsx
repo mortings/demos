@@ -52,7 +52,12 @@ export function HistoryPane({ settings, update }: PaneProps) {
                 {item.language && <Badge tone="muted">{item.language.toUpperCase()}</Badge>}
                 {item.mode === 'handsFree' && <Badge tone="muted">hands-free</Badge>}
                 <span>{(item.audioMs / 1000).toFixed(1)} s audio</span>
-                {item.latencyMs > 0 && <span>{(item.latencyMs / 1000).toFixed(1)} s to insert</span>}
+                {item.latencyMs > 0 && (
+                  <span title={item.asrMs !== undefined ? `recogniser ${(item.asrMs / 1000).toFixed(1)} s · cleanup ${((item.cleanupMs ?? 0) / 1000).toFixed(1)} s` : undefined}>
+                    {(item.latencyMs / 1000).toFixed(1)} s to insert
+                    {item.asrMs !== undefined && ` (${(item.asrMs / 1000).toFixed(1)} recogniser + ${((item.cleanupMs ?? 0) / 1000).toFixed(1)} cleanup)`}
+                  </span>
+                )}
                 <div className="history-actions">
                   <Button small kind="ghost" onClick={() => setExpanded(expanded === item.id ? null : item.id)}>
                     {expanded === item.id ? 'Hide raw' : 'Show raw'}

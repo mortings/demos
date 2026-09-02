@@ -179,7 +179,7 @@ export function ProvidersPane({ settings, update }: PaneProps) {
         </Row>
         {llm.provider === 'anthropic' && (
           <>
-            <Row label="Model" hint="Every model in the list handles the task well; pick by speed.">
+            <Row label="Model" hint="All three handle the cleanup well, so this is mostly a speed choice. Haiku 4.5 gets closest to instant; Opus 5 is the most careful with messy, long dictations.">
               <Select
                 value={ANTHROPIC_MODEL_OPTIONS.some((m) => m.id === llm.models.anthropic) ? (llm.models.anthropic as string) : 'custom'}
                 options={[...ANTHROPIC_MODEL_OPTIONS.map((m) => ({ value: m.id, label: m.label })), { value: 'custom', label: 'Custom model id…' }]}

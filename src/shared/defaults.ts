@@ -73,9 +73,9 @@ export const LLM_MODEL_UPGRADES: Record<string, string> = {
 };
 
 export const ANTHROPIC_MODEL_OPTIONS: { id: string; label: string }[] = [
-  { id: 'claude-opus-5', label: 'Claude Opus 5 (best quality)' },
-  { id: 'claude-sonnet-5', label: 'Claude Sonnet 5 (fast)' },
-  { id: 'claude-haiku-4-5', label: 'Claude Haiku 4.5 (fastest)' },
+  { id: 'claude-opus-5', label: 'Claude Opus 5 (best quality, slowest: roughly 1.5–3 s per dictation)' },
+  { id: 'claude-sonnet-5', label: 'Claude Sonnet 5 (roughly 1–1.5 s)' },
+  { id: 'claude-haiku-4-5', label: 'Claude Haiku 4.5 (fastest: roughly 0.5–1 s)' },
 ];
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -101,7 +101,7 @@ export const DEFAULT_SETTINGS: Settings = {
     deviceId: null,
     keepMicWarm: true,
     preRollMs: 400,
-    postRollMs: 450,
+    postRollMs: 400,
     sensitivity: 'normal',
   },
   dictation: {

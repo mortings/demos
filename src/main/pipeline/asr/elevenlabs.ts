@@ -14,6 +14,7 @@ export interface ElevenLabsOptions {
 export function createElevenLabsTranscriber(opts: ElevenLabsOptions): Transcriber {
   return {
     name: 'ElevenLabs',
+    origin: 'https://api.elevenlabs.io',
     async transcribe(req: TranscribeRequest): Promise<TranscribeResult> {
       const form = new FormData();
       form.append('file', wavBlob(req.wav), 'audio.wav');

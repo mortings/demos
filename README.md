@@ -66,6 +66,12 @@ Scribe v2 and gpt-transcribe both process audio at roughly 30x real time, so a t
 
 For cleanup, Claude Opus 5 at **low** effort is the default per the model guidance used to build this. If you want it snappier, pick Sonnet 5 or Haiku 4.5 in Providers; quality on this task is close.
 
+## Latency
+
+Flyt is built to feel instant: the post-roll ends the moment you have stopped talking, audio is chunked at natural pauses and transcribed while you are still speaking (so only the last sentence is recognised after release), HTTPS connections to both APIs are opened during the dictation and kept alive between dictations, and one- or two-word utterances skip the cleanup model. Each history entry shows the split between recogniser and cleanup time.
+
+What is left is mostly the cleanup model. Rough numbers per dictation: Claude Haiku 4.5 about 0.5–1 s, Sonnet 5 about 1–1.5 s, Opus 5 about 1.5–3 s. If Flyt feels slow, switch the cleanup model to Haiku 4.5 in Providers; quality on this task is close. For the recogniser, Scribe v2 and gpt-transcribe both take well under a second for a normal sentence; Groq's Whisper is faster still but weaker on Norwegian.
+
 ## How the pipeline works
 
 ```
