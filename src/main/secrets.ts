@@ -52,10 +52,16 @@ export class SecretStore {
       for (const name of SECRET_NAMES) {
         const stored = raw[name];
         if (!stored) continue;
-        if (stored.startsWith('plain:')) {
-          this.values[name] = Buffer.from(stored.slice(6), 'base64').toString('utf8');
-        } else if (this.cipher.isAvailable()) {
-          this.values[name] = this.cipher.decrypt(Buffer.from(stored, 'base64'));
+        try {
+          if (stored.startsWith('plain:')) {
+            this.values[name] = Buffer.from(stored.slice(6), 'base64').toString('utf8');
+          } else if (this.cipher.isAvailable()) {
+            this.values[name] = this.cipher.decrypt(Buffer.from(stored, 'base64'));
+          }
+        } catch {
+          // Written by a different build of the app (e.g. the unpackaged dev
+          // build uses another keychain entry). The key has to be re-entered.
+          console.warn(`[secrets] could not decrypt "${name}"; it needs to be entered again`);
         }
       }
     } catch (err) {

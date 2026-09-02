@@ -43,6 +43,12 @@ async function main(): Promise<void> {
   // dictations so each request skips DNS + TCP + TLS (a few hundred ms).
   setGlobalDispatcher(new Agent({ keepAliveTimeout: 90_000, keepAliveMaxTimeout: 600_000, connect: { timeout: 10_000 } }));
   await app.whenReady();
+  app.setAboutPanelOptions({
+    applicationName: 'Flyt',
+    applicationVersion: app.getVersion(),
+    copyright: 'Forgiving voice dictation in English and Norwegian.',
+  });
+  if (process.platform === 'darwin' && !app.isPackaged) app.dock?.setIcon(appIcon());
 
   const userData = app.getPath('userData');
   const settingsStore = new SettingsStore(path.join(userData, 'settings.json'));
