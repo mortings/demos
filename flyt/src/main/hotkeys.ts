@@ -2,6 +2,8 @@ import { EventEmitter } from 'node:events';
 import { UiohookKey, uIOhook, type UiohookKeyboardEvent } from 'uiohook-napi';
 import type { KeyBinding, KeyCaptureEvent } from '../shared/types';
 
+const MAC = process.platform === 'darwin';
+
 /**
  * Global hotkeys with real key-down / key-up semantics (Electron's own
  * globalShortcut only fires on press, which is useless for push-to-talk).
@@ -24,6 +26,9 @@ export class HotkeyManager extends EventEmitter {
   private capturing = false;
   private captured = new Set<number>();
   private running = false;
+  /** Ignore our own synthetic paste keystroke until this time. */
+  private suppressUntil = 0;
+  private static readonly SYNTHETIC_KEYS = new Set<number>([UiohookKey.V, UiohookKey.Meta, UiohookKey.Ctrl]);
 
   setBindings(ptt: KeyBinding, toggle: KeyBinding | null): void {
     this.pttBinding = ptt;
@@ -63,6 +68,27 @@ export class HotkeyManager extends EventEmitter {
     return this.running;
   }
 
+  /**
+   * Post a paste keystroke (⌘V on macOS, Ctrl+V elsewhere) through the same
+   * input hook. Needs only the Accessibility permission we already have for
+   * listening, so no AppleScript / Automation prompt is involved.
+   */
+  pasteKeystroke(): boolean {
+    if (!this.running) return false;
+    try {
+      this.suppressUntil = Date.now() + 250;
+      uIOhook.keyTap(UiohookKey.V, [MAC ? UiohookKey.Meta : UiohookKey.Ctrl]);
+      return true;
+    } catch (err) {
+      console.warn('[hotkeys] synthetic paste failed', err);
+      return false;
+    }
+  }
+
+  private isSynthetic(e: UiohookKeyboardEvent): boolean {
+    return Date.now() < this.suppressUntil && HotkeyManager.SYNTHETIC_KEYS.has(e.keycode);
+  }
+
   startCapture(): void {
     this.capturing = true;
     this.captured.clear();
@@ -74,6 +100,7 @@ export class HotkeyManager extends EventEmitter {
   }
 
   private onKeyDown = (e: UiohookKeyboardEvent): void => {
+    if (this.isSynthetic(e)) return;
     this.pressed.add(e.keycode);
     if (this.capturing) {
       this.captured.add(e.keycode);
@@ -94,6 +121,7 @@ export class HotkeyManager extends EventEmitter {
   };
 
   private onKeyUp = (e: UiohookKeyboardEvent): void => {
+    if (this.isSynthetic(e)) return;
     this.pressed.delete(e.keycode);
     if (this.capturing) {
       if (this.captured.size > 0 && [...this.captured].every((k) => !this.pressed.has(k))) {
@@ -121,8 +149,6 @@ export class HotkeyManager extends EventEmitter {
     this.emit('capture', event);
   }
 }
-
-const MAC = process.platform === 'darwin';
 
 const SPECIAL_LABELS: Record<number, string> = {
   [UiohookKey.Alt]: MAC ? '⌥' : 'Alt',

@@ -45,11 +45,14 @@ async function restoreClipboard(snapshot: ClipboardItem[]): Promise<void> {
   await clipboard.write(snapshot);
 }
 
-async function sendPasteKeystroke(): Promise<void> {
+export type InsertMethod = 'hook' | 'os';
+
+async function sendPasteKeystroke(keyTap?: () => boolean): Promise<InsertMethod> {
+  if (keyTap && keyTap()) return 'hook';
   switch (process.platform) {
     case 'darwin':
       await run('osascript', ['-e', 'tell application "System Events" to keystroke "v" using command down']);
-      return;
+      return 'os';
     case 'win32':
       await run('powershell', [
         '-NoProfile',
@@ -57,18 +60,21 @@ async function sendPasteKeystroke(): Promise<void> {
         '-Command',
         'Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait("^v")',
       ]);
-      return;
+      return 'os';
     default:
       try {
         await run('xdotool', ['key', '--clearmodifiers', 'ctrl+v']);
       } catch {
         await run('wtype', ['-M', 'ctrl', 'v', '-m', 'ctrl']);
       }
+      return 'os';
   }
 }
 
 export interface InsertOptions {
   restoreClipboard: boolean;
+  /** Posts ⌘V / Ctrl+V through the input hook; returns false if unavailable. */
+  keyTap?: () => boolean;
 }
 
 /**
@@ -77,14 +83,14 @@ export interface InsertOptions {
  * only approach that is fast, handles every Unicode character and works in
  * every app, which is also what the commercial dictation tools do.
  */
-export async function insertText(text: string, opts: InsertOptions): Promise<void> {
-  if (!text) return;
+export async function insertText(text: string, opts: InsertOptions): Promise<InsertMethod> {
+  if (!text) return 'hook';
   const snapshot = opts.restoreClipboard ? await snapshotClipboard() : null;
   await clipboard.writeText(text);
   // Give the pasteboard a moment to settle before the keystroke.
   await sleep(40);
   try {
-    await sendPasteKeystroke();
+    return await sendPasteKeystroke(opts.keyTap);
   } finally {
     if (snapshot) {
       // Restore after the target app has read the pasteboard.

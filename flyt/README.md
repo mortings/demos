@@ -14,6 +14,7 @@ Built with Electron + TypeScript so it runs on macOS (the main target), Windows 
   - A guard rejects model output that looks like an answer or a summary instead of a cleanup, and falls back to deterministic offline rules, so you always get your own words.
 - **Bilingual.** Auto-detects English and Norwegian, including mixed sentences with English product names inside Norwegian. Optional translate-on-insert.
 - **Smooth.** Floating pill with a live waveform, sounds, ~1 s from key release to inserted text. Long dictations are chunked at pauses and transcribed in parallel while you are still talking, so the wait at the end stays short. Hands-free mode inserts text chunk by chunk as you pause.
+- **Pastes without AppleScript.** Text is inserted with a synthetic ⌘V through the same input hook that listens for the hotkey, so only Accessibility is needed. AppleScript, PowerShell and xdotool are kept as fallbacks.
 - **All the main settings.** Hotkeys, microphone and sensitivity, pause tuning, languages, cleanup toggles, custom vocabulary with "sounds like" aliases, snippets, per-app styles (casual in Slack, formal in Mail, verbatim in terminals and editors), provider and model choice, history, privacy.
 - **Pluggable speech-to-text.** OpenAI (`gpt-4o-transcribe`), Groq (`whisper-large-v3`), Deepgram (`nova-3`), ElevenLabs Scribe, or any OpenAI-compatible server (whisper.cpp, Speaches, LocalAI) for fully offline recognition.
 - **Cleanup with Claude** through the official Anthropic SDK (Claude Opus 5 at low effort by default; Sonnet 5 and Haiku 4.5 selectable), with prompt caching and server-side refusal fallbacks enabled. An OpenAI-compatible endpoint (including Ollama) can be used instead, or cleanup can be switched off.
@@ -35,7 +36,7 @@ npm start          # launches Flyt in the menu bar
 
 The first launch opens Settings → Setup. Work through it:
 
-1. **Permissions (macOS):** Microphone, Accessibility (to paste), Input Monitoring (to see the hotkey in other apps) and Automation for System Events (first paste prompts). Restart Flyt after granting Input Monitoring.
+1. **Permissions (macOS):** Microphone, Accessibility (hotkey + paste) and, if macOS asks, Input Monitoring. No restart needed: Flyt starts its keyboard hook as soon as Accessibility is granted. When running from source the process is listed as **Electron** in these panes; the packaged app is listed as Flyt.
 2. **Providers:** paste your speech-to-text key and your Anthropic key, press the test buttons.
 3. Put the cursor in any text field, hold right ⌥, speak, release.
 

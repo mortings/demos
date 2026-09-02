@@ -15,20 +15,14 @@ const PERMISSIONS: { kind: PermissionKind; title: string; hint: string; request:
   {
     kind: 'accessibility',
     title: 'Accessibility',
-    hint: 'Lets Flyt paste the dictated text into the app you are typing in.',
+    hint: 'Lets Flyt see the dictation key in every app and paste the text at your cursor. Flyt picks it up within a few seconds of you granting it.',
     request: 'Allow',
   },
   {
     kind: 'inputMonitoring',
     title: 'Input Monitoring',
-    hint: 'Lets Flyt see the dictation hotkey while other apps are in front. Restart Flyt after granting it.',
+    hint: 'macOS may also ask for this the first time the hotkey hook starts. If holding the key does nothing, check it here.',
     request: 'Open settings',
-  },
-  {
-    kind: 'automation',
-    title: 'Automation (System Events)',
-    hint: 'macOS asks the first time Flyt pastes. Click below to trigger the prompt now.',
-    request: 'Trigger prompt',
   },
 ];
 
@@ -79,7 +73,16 @@ export function SetupPane({ settings, navigate }: PaneProps) {
       </p>
 
       {(mac || api.platform === 'win32') && (
-        <Section title="Permissions" description={mac ? 'macOS needs your OK for each of these. Flyt re-checks them every few seconds.' : 'Windows needs microphone access.'}>
+        <Section
+          title="Permissions"
+          description={
+            mac
+              ? `macOS needs your OK for each of these. Flyt re-checks them every few seconds.${
+                  status?.devMode ? ' You are running from source, so macOS lists the app as “Electron” in these panes; the packaged app shows up as “Flyt”.' : ''
+                }`
+              : 'Windows needs microphone access.'
+          }
+        >
           <div className="checklist">
             {PERMISSIONS.filter((p) => mac || p.kind === 'microphone').map((p) => {
               const state = permissions?.[p.kind] ?? 'unknown';
