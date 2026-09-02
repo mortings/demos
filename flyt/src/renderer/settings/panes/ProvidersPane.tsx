@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ANTHROPIC_MODEL_OPTIONS, ASR_MODEL_OPTIONS, ASR_SECRET } from '../../../shared/defaults';
+import { ANTHROPIC_MODEL_OPTIONS, ASR_MODEL_OPTIONS, ASR_SECRET, OPENAI_COMPAT_MODEL_OPTIONS } from '../../../shared/defaults';
 import type { AsrProvider, LlmProvider, ProviderTestResult, SecretName } from '../../../shared/types';
 import type { PaneProps } from '../App';
 import { useSecrets } from '../hooks';
@@ -30,7 +30,7 @@ const ASR_INFO: Record<AsrProvider, { label: string; hint: string; keyUrl: strin
   },
   custom: {
     label: 'Custom (OpenAI-compatible)',
-    hint: 'Any server with the OpenAI /audio/transcriptions API: whisper.cpp server, Speaches, faster-whisper-server, LocalAI. Fully offline if you like.',
+    hint: 'Any server with the OpenAI /audio/transcriptions API: whisper.cpp server, Speaches, faster-whisper-server, LocalAI for fully offline use, or Mistral Voxtral (base URL https://api.mistral.ai/v1, model voxtral-mini-latest; note Voxtral does not cover Norwegian).',
     keyUrl: null,
   },
 };
@@ -217,8 +217,13 @@ export function ProvidersPane({ settings, update }: PaneProps) {
             <Row label="Base URL" hint="Up to and including /v1. Works with OpenAI, Mistral, Ollama (http://localhost:11434/v1), LM Studio…">
               <DraftInput value={llm.customBaseUrl} className="wide" onCommit={(v) => void update({ llm: { customBaseUrl: v } })} />
             </Row>
-            <Row label="Model">
-              <DraftInput value={llm.models['openai-compatible'] ?? ''} onCommit={(v) => void update({ llm: { models: { 'openai-compatible': v } } })} />
+            <Row label="Model" hint="gpt-5.4-mini is a good fit for OpenAI; reasoning effort is set to low automatically for gpt-5 models.">
+              <DraftInput value={llm.models['openai-compatible'] ?? ''} list="llm-models" onCommit={(v) => void update({ llm: { models: { 'openai-compatible': v } } })} />
+              <datalist id="llm-models">
+                {OPENAI_COMPAT_MODEL_OPTIONS.map((m) => (
+                  <option key={m} value={m} />
+                ))}
+              </datalist>
             </Row>
             <Row label="API key" hint="Leave empty for local servers.">
               <KeyField name="openaiCompatible" saved={secrets?.openaiCompatible ?? false} onSaved={(v) => setSecret('openaiCompatible', v)} />

@@ -12,6 +12,16 @@ export interface OpenAiCompatibleCleanupOptions {
   timeoutMs: number;
 }
 
+/**
+ * OpenAI's reasoning models (gpt-5.x, o-series) reject `temperature` and take a
+ * `reasoning_effort` instead; everything else gets a low temperature for
+ * deterministic cleanup.
+ */
+function modelParams(model: string): Record<string, unknown> {
+  if (/^(gpt-5|o\d)/i.test(model)) return { reasoning_effort: 'low' };
+  return { temperature: 0.2 };
+}
+
 export async function cleanupWithOpenAiCompatible(opts: OpenAiCompatibleCleanupOptions): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), opts.timeoutMs);
@@ -24,7 +34,7 @@ export async function cleanupWithOpenAiCompatible(opts: OpenAiCompatibleCleanupO
       signal: controller.signal,
       body: JSON.stringify({
         model: opts.model,
-        temperature: 0.2,
+        ...modelParams(opts.model),
         messages: [
           { role: 'system', content: opts.system },
           { role: 'user', content: opts.user },

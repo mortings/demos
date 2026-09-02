@@ -17,7 +17,7 @@ Built with Electron + TypeScript so it runs on macOS (the main target), Windows 
 - **Pastes without AppleScript.** Text is inserted with a synthetic ⌘V through the same input hook that listens for the hotkey, so only Accessibility is needed. AppleScript, PowerShell and xdotool are kept as fallbacks.
 - **All the main settings.** Hotkeys, microphone and sensitivity, pause tuning, languages, cleanup toggles, custom vocabulary with "sounds like" aliases, snippets, per-app styles (casual in Slack, formal in Mail, verbatim in terminals and editors), provider and model choice, history, privacy.
 - **Pluggable speech-to-text.** OpenAI (`gpt-transcribe`), ElevenLabs Scribe v2, Groq (`whisper-large-v3`), Deepgram (`nova-3`), or any OpenAI-compatible server (whisper.cpp, Speaches, LocalAI) for fully offline recognition.
-- **Cleanup with Claude** through the official Anthropic SDK (Claude Opus 5 at low effort by default; Sonnet 5 and Haiku 4.5 selectable), with prompt caching and server-side refusal fallbacks enabled. An OpenAI-compatible endpoint (including Ollama) can be used instead, or cleanup can be switched off.
+- **Cleanup with Claude** through the official Anthropic SDK (Claude Opus 5 at low effort by default; Sonnet 5 and Haiku 4.5 selectable), with prompt caching and server-side refusal fallbacks enabled. An OpenAI-compatible endpoint can be used instead (GPT-5.4 mini by default, or Ollama and friends), or cleanup can be switched off.
 
 ## Requirements
 
@@ -60,6 +60,7 @@ Signing/notarisation is left to your Apple Developer account (see `electron-buil
 | Strong default if you already have an OpenAI key | OpenAI `gpt-transcribe` | Current OpenAI model; `gpt-4o-transcribe` and `whisper-1` shut down 26 Feb 2027 and are auto-upgraded in settings |
 | Lowest latency | Groq `whisper-large-v3-turbo` or Deepgram `nova-3` | A few hundred milliseconds, but weaker on Norwegian |
 | Offline / private | Custom → whisper.cpp server, Speaches, LocalAI | Point the base URL at `http://localhost:8080/v1` |
+| Mistral Voxtral Transcribe 2 | Custom → `https://api.mistral.ai/v1`, model `voxtral-mini-latest` | Very cheap and accurate, but its 13 languages do not include Norwegian |
 
 Scribe v2 and gpt-transcribe both process audio at roughly 30x real time, so a ten-second dictation takes well under a second plus network time; the cleanup pass adds about the same again.
 
