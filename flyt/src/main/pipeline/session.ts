@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 import type { ActiveApp, AppStatus, DictationMode, HistoryItem, OverlayState, Phase, SecretName, Settings } from '../../shared/types';
 import { newId } from '../../shared/util';
 import { buildAsrPrompt, createTranscriber, type TranscribeResult, type Transcriber } from './asr';
-import { cleanupTranscript } from './cleanup';
+import { cleanupTranscript, llmOrigin } from './cleanup';
 import { joinWithPauseMarkers } from './cleanup/prompt';
 import { Segmenter, type SegmenterEvent, type SegmenterOptions } from './segmenter';
 import { SENSITIVITY_PRESETS, dbToLevel } from './vad';
@@ -47,9 +47,22 @@ interface Session {
   chain: Promise<void>;
   cancelled: boolean;
   totalAudioMs: number;
+  /** When the user released the key / stopped hands-free. */
+  stoppedAt: number;
+  /** When the last recogniser result arrived. */
+  lastAsrAt: number;
 }
 
 const SAMPLE_RATE = 16000;
+
+/**
+ * While the key is held we still cut chunks at natural pauses and transcribe
+ * them in the background, so at release only the last sentence or so is left
+ * to recognise. These are deliberately more relaxed than hands-free chunking:
+ * fewer, longer chunks give the recogniser more context.
+ */
+const HOLD_CUT_PAUSE_MS = 800;
+const HOLD_MIN_SEGMENT_MS = 3000;
 
 /**
  * Owns the life of one dictation: hotkey → recording → recogniser → cleanup →
@@ -99,11 +112,9 @@ export class DictationController extends EventEmitter {
     return {
       preRollMs: s.audio.keepMicWarm ? s.audio.preRollMs : 0,
       postRollMs: s.audio.postRollMs,
-      pauseMs: mode === 'handsFree' ? s.dictation.pauseMs : Math.max(1200, s.dictation.pauseMs),
-      // Hold mode prefers long chunks (better recogniser context); hands-free
-      // prefers responsiveness.
-      minSegmentMs: mode === 'handsFree' ? 1500 : 8000,
-      maxSegmentMs: mode === 'handsFree' ? 30000 : 45000,
+      pauseMs: mode === 'handsFree' ? s.dictation.pauseMs : Math.max(HOLD_CUT_PAUSE_MS, Math.min(s.dictation.pauseMs, 1200)),
+      minSegmentMs: mode === 'handsFree' ? 1500 : HOLD_MIN_SEGMENT_MS,
+      maxSegmentMs: 30000,
       vad: { thresholdDb: preset.thresholdDb, minSpeechDb: preset.minSpeechDb },
     };
   }
@@ -188,11 +199,14 @@ export class DictationController extends EventEmitter {
       chain: Promise.resolve(),
       cancelled: false,
       totalAudioMs: 0,
+      stoppedAt: 0,
+      lastAsrAt: 0,
     };
     void session.appPromise.then((app) => {
       session.app = app;
     });
     this.session = session;
+    this.warmConnections(transcriber.origin, llmOrigin(settings));
     this.frameCounter = 0;
     this.deps.openMic();
     this.segmenter.setOptions(this.segmenterOptions(mode));
@@ -209,8 +223,20 @@ export class DictationController extends EventEmitter {
     this.emitStatus();
   }
 
+  /**
+   * Open the TLS connections to the recogniser and the cleanup model while
+   * the user is still talking, so neither request pays a handshake later.
+   * The keep-alive agent installed at startup then holds them open.
+   */
+  private warmConnections(...origins: (string | null)[]): void {
+    for (const origin of new Set(origins.filter((o): o is string => Boolean(o)))) {
+      fetch(origin, { method: 'HEAD', signal: AbortSignal.timeout(3000) }).catch(() => undefined);
+    }
+  }
+
   private stopSession(): void {
     if (!this.session) return;
+    this.session.stoppedAt = Date.now();
     this.segmenter.stop();
     this.deps.playSound('stop');
     this.setOverlay({ phase: 'processing', message: null });
@@ -272,6 +298,7 @@ export class DictationController extends EventEmitter {
     chunk.promise.then(
       (result) => {
         chunk.result = result;
+        session.lastAsrAt = Date.now();
         if (result.text) session.lastTranscript = result.text;
         if (result.language && !session.language) {
           session.language = result.language;
@@ -353,6 +380,7 @@ export class DictationController extends EventEmitter {
         this.setOverlay({ phase: 'empty', message: "Didn't catch that", level: 0, speech: false }, 1400);
         return;
       }
+      const asrMs = Math.max(0, session.lastAsrAt - session.stoppedAt);
       const app = session.app ?? (await session.appPromise);
       const cleaned = await cleanupTranscript(raw, {
         settings,
@@ -368,10 +396,13 @@ export class DictationController extends EventEmitter {
       }
       const text = withLeadingSpace(cleaned.text, '', settings.dictation.leadingSpace);
       await this.deps.insert(text);
-      const latencyMs = Date.now() - session.startedAt - session.totalAudioMs;
-      this.recordHistory(session, raw.replace(/\s*\[pause [\d.]+s\]\s*/g, ' '), text, Math.max(0, latencyMs));
+      const latencyMs = Math.max(0, Date.now() - session.stoppedAt);
+      this.deps.log(
+        `inserted in ${(latencyMs / 1000).toFixed(2)}s (recogniser ${(asrMs / 1000).toFixed(2)}s, cleanup ${(cleaned.latencyMs / 1000).toFixed(2)}s via ${cleaned.engine}, ${session.chunks.length} chunk${session.chunks.length === 1 ? '' : 's'})`,
+      );
+      this.recordHistory(session, raw.replace(/\s*\[pause [\d.]+s\]\s*/g, ' '), text, latencyMs, asrMs, cleaned.latencyMs);
       this.deps.playSound('done');
-      this.emitStatus({ lastLatencyMs: Math.max(0, latencyMs), lastError: cleaned.note ?? null });
+      this.emitStatus({ lastLatencyMs: latencyMs, lastError: cleaned.note ?? null });
       this.setOverlay({ phase: 'inserted', message: cleaned.note ? 'Inserted (offline cleanup)' : 'Inserted', level: 0, speech: false }, 1000);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -386,7 +417,7 @@ export class DictationController extends EventEmitter {
     }
   }
 
-  private recordHistory(session: Session, raw: string, text: string, latencyMs?: number): void {
+  private recordHistory(session: Session, raw: string, text: string, latencyMs?: number, asrMs?: number, cleanupMs?: number): void {
     if (!this.deps.settings().general.keepHistory) return;
     const item: HistoryItem = {
       id: session.id,
@@ -396,6 +427,8 @@ export class DictationController extends EventEmitter {
       text: text.trim(),
       audioMs: session.totalAudioMs,
       latencyMs: latencyMs ?? 0,
+      ...(asrMs !== undefined ? { asrMs } : {}),
+      ...(cleanupMs !== undefined ? { cleanupMs } : {}),
       mode: session.mode,
       language: session.language,
     };

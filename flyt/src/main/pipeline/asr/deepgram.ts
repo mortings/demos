@@ -19,6 +19,7 @@ interface DeepgramResponse {
 export function createDeepgramTranscriber(opts: DeepgramOptions): Transcriber {
   return {
     name: 'Deepgram',
+    origin: 'https://api.deepgram.com',
     async transcribe(req: TranscribeRequest): Promise<TranscribeResult> {
       const params = new URLSearchParams();
       params.set('model', opts.model);

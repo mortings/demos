@@ -5,6 +5,7 @@ import { cleanupWithOpenAiCompatible } from './openai-compatible';
 import { CLEANUP_SYSTEM_PROMPT, buildCleanupUserMessage, resolveStyle } from './prompt';
 import { applyDictionary, applyRules, applySnippets } from './rules';
 import { collapseWhitespace } from './text-utils';
+import { countWords } from '../../../shared/util';
 
 export type CleanupEngine = 'anthropic' | 'openai-compatible' | 'rules' | 'raw';
 
@@ -24,6 +25,22 @@ export interface CleanupContext {
   /** Text already inserted earlier in this hands-free session. */
   previousText: string | null;
   detectedLanguage: string | null;
+}
+
+/** https origin of the cleanup API, for connection warm-up. */
+export function llmOrigin(settings: Settings): string | null {
+  switch (settings.llm.provider) {
+    case 'anthropic':
+      return 'https://api.anthropic.com';
+    case 'openai-compatible':
+      try {
+        return new URL(settings.llm.customBaseUrl).origin;
+      } catch {
+        return null;
+      }
+    case 'none':
+      return null;
+  }
 }
 
 export function llmConfigured(settings: Settings, secret: (name: SecretName) => string | null): boolean {
@@ -71,6 +88,10 @@ export async function cleanupTranscript(raw: string, ctx: CleanupContext): Promi
   if (!trimmed) return finish('', 'raw');
   if (settings.dictation.rawMode) return finish(trimmed, 'raw');
   if (settings.llm.provider === 'none' || !llmConfigured(settings, ctx.secret)) {
+    return finish(rulesFallback(trimmed, ctx, style), 'rules');
+  }
+  // "yes", "ok thanks": nothing for a model to fix, not worth a round trip.
+  if (countWords(trimmed) <= 2 && !/\[pause/.test(trimmed)) {
     return finish(rulesFallback(trimmed, ctx, style), 'rules');
   }
 

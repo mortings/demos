@@ -17,7 +17,17 @@ export interface TranscribeResult {
 
 export interface Transcriber {
   readonly name: string;
+  /** https origin of the API, used to open the TLS connection ahead of time. */
+  readonly origin: string;
   transcribe(req: TranscribeRequest): Promise<TranscribeResult>;
+}
+
+export function originOf(url: string): string {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return url;
+  }
 }
 
 export class AsrError extends Error {

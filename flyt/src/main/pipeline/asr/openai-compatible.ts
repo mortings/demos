@@ -1,4 +1,4 @@
-import { AsrError, languageParam, normaliseLanguage, readErrorBody, wavBlob, type Transcriber, type TranscribeRequest, type TranscribeResult } from './types';
+import { AsrError, languageParam, normaliseLanguage, originOf, readErrorBody, wavBlob, type Transcriber, type TranscribeRequest, type TranscribeResult } from './types';
 
 export interface OpenAiCompatibleOptions {
   name: string;
@@ -17,6 +17,7 @@ export function createOpenAiCompatibleTranscriber(opts: OpenAiCompatibleOptions)
   const isWhisper = /whisper/i.test(opts.model);
   return {
     name: opts.name,
+    origin: originOf(opts.baseUrl),
     async transcribe(req: TranscribeRequest): Promise<TranscribeResult> {
       const form = new FormData();
       form.append('file', wavBlob(req.wav), 'audio.wav');

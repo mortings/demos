@@ -216,7 +216,12 @@ export interface HistoryItem {
   raw: string;
   text: string;
   audioMs: number;
+  /** Key release → text inserted. */
   latencyMs: number;
+  /** Part of latencyMs spent waiting for the recogniser after release. */
+  asrMs?: number;
+  /** Part of latencyMs spent in the cleanup model. */
+  cleanupMs?: number;
   mode: DictationMode;
   language: string | null;
 }

@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { BrowserWindow, app, ipcMain, safeStorage, session, shell, systemPreferences } from 'electron';
+import { Agent, setGlobalDispatcher } from 'undici';
 import { DEFAULT_SETTINGS } from '../shared/defaults';
 import {
   IPC,
@@ -38,6 +39,9 @@ if (!app.requestSingleInstanceLock()) {
 
 async function main(): Promise<void> {
   app.setName('Flyt');
+  // Keep HTTPS connections to the speech and cleanup APIs open between
+  // dictations so each request skips DNS + TCP + TLS (a few hundred ms).
+  setGlobalDispatcher(new Agent({ keepAliveTimeout: 90_000, keepAliveMaxTimeout: 600_000, connect: { timeout: 10_000 } }));
   await app.whenReady();
 
   const userData = app.getPath('userData');

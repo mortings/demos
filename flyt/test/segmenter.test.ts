@@ -152,3 +152,37 @@ describe('Segmenter', () => {
     expect(last?.type === 'level' && last.silenceMs).toBeGreaterThan(2500);
   });
 });
+
+describe('Segmenter post-roll', () => {
+  it('finishes right away when the speaker went quiet before releasing', () => {
+    const rng = makeRng(21);
+    const seg = new Segmenter({ ...hold, postRollMs: 400 });
+    const ev: SegmenterEvent[] = [];
+    seg.start();
+    feed(seg, rng, 1500, 'speech', ev);
+    feed(seg, rng, 600, 'silence', ev); // stopped talking, key still held
+    seg.stop();
+    const before = ev.length;
+    feed(seg, rng, 400, 'silence', ev);
+    const stoppedIndex = ev.findIndex((e, i) => i >= before && e.type === 'stopped');
+    // Emitted within the first couple of frames instead of after the full post-roll.
+    expect(stoppedIndex).toBeGreaterThanOrEqual(0);
+    expect(stoppedIndex - before).toBeLessThan(6);
+    expect(segmentsOf(ev)).toHaveLength(1);
+  });
+
+  it('waits the full post-roll when the key is released mid-word', () => {
+    const rng = makeRng(22);
+    const seg = new Segmenter({ ...hold, postRollMs: 400 });
+    const ev: SegmenterEvent[] = [];
+    seg.start();
+    feed(seg, rng, 1500, 'speech', ev);
+    seg.stop();
+    feed(seg, rng, 200, 'speech', ev); // tail of the word after release
+    expect(stoppedOf(ev)).toBeUndefined();
+    feed(seg, rng, 400, 'silence', ev);
+    expect(stoppedOf(ev)).toBeDefined();
+    // The tail spoken after release is part of the segment.
+    expect(segmentsOf(ev)[0]!.speechMs).toBeGreaterThan(1600);
+  });
+});
