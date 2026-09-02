@@ -34,19 +34,28 @@ export const ASR_SECRET: Record<Settings['asr']['provider'], SecretName> = {
 };
 
 export const ASR_DEFAULT_MODELS: Record<Settings['asr']['provider'], string> = {
-  openai: 'gpt-4o-transcribe',
+  openai: 'gpt-transcribe',
   groq: 'whisper-large-v3',
   deepgram: 'nova-3',
-  elevenlabs: 'scribe_v1',
+  elevenlabs: 'scribe_v2',
   custom: 'whisper-1',
 };
 
 export const ASR_MODEL_OPTIONS: Record<Settings['asr']['provider'], string[]> = {
-  openai: ['gpt-4o-transcribe', 'gpt-4o-mini-transcribe', 'whisper-1'],
+  // gpt-4o-transcribe, gpt-4o-mini-transcribe and whisper-1 were deprecated by
+  // OpenAI on 2026-08-26 and shut down on 2027-02-26; gpt-transcribe replaces them.
+  openai: ['gpt-transcribe', 'gpt-4o-transcribe', 'gpt-4o-mini-transcribe', 'whisper-1'],
   groq: ['whisper-large-v3', 'whisper-large-v3-turbo'],
   deepgram: ['nova-3', 'nova-2'],
-  elevenlabs: ['scribe_v1'],
+  elevenlabs: ['scribe_v2', 'scribe_v1'],
   custom: ['whisper-1'],
+};
+
+/** Stored model ids that should be upgraded when settings are loaded. */
+export const ASR_MODEL_UPGRADES: Record<string, string> = {
+  'gpt-4o-transcribe': 'gpt-transcribe',
+  'gpt-4o-mini-transcribe': 'gpt-transcribe',
+  scribe_v1: 'scribe_v2',
 };
 
 export const LLM_DEFAULT_MODELS = {

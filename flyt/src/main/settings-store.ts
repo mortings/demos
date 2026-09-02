@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
-import { DEFAULT_SETTINGS } from '../shared/defaults';
+import { ASR_MODEL_UPGRADES, DEFAULT_SETTINGS } from '../shared/defaults';
 import { SettingsSchema, type DeepPartial, type Settings } from '../shared/types';
 import { deepMerge } from '../shared/util';
 
@@ -45,7 +45,7 @@ export class SettingsStore extends EventEmitter {
       console.warn('[settings] could not read settings file, using defaults', err);
       this.backupCorrupt();
     }
-    const merged = deepMerge<Settings>(structuredClone(DEFAULT_SETTINGS), stored);
+    const merged = migrate(deepMerge<Settings>(structuredClone(DEFAULT_SETTINGS), stored));
     const parsed = SettingsSchema.safeParse(merged);
     if (parsed.success) return parsed.data;
     console.warn('[settings] stored settings failed validation, repairing section by section', parsed.error.issues);
@@ -70,6 +70,18 @@ export class SettingsStore extends EventEmitter {
   private save(): void {
     writeJsonAtomic(this.filePath, this.settings);
   }
+}
+
+/** Forward-compatible fixes applied to whatever was on disk. */
+export function migrate(settings: Settings): Settings {
+  const models = settings.asr?.models;
+  if (models && typeof models === 'object') {
+    for (const [provider, model] of Object.entries(models)) {
+      const upgrade = ASR_MODEL_UPGRADES[model];
+      if (upgrade) (models as Record<string, string>)[provider] = upgrade;
+    }
+  }
+  return settings;
 }
 
 export function writeJsonAtomic(filePath: string, value: unknown): void {

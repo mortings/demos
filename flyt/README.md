@@ -16,7 +16,7 @@ Built with Electron + TypeScript so it runs on macOS (the main target), Windows 
 - **Smooth.** Floating pill with a live waveform, sounds, ~1 s from key release to inserted text. Long dictations are chunked at pauses and transcribed in parallel while you are still talking, so the wait at the end stays short. Hands-free mode inserts text chunk by chunk as you pause.
 - **Pastes without AppleScript.** Text is inserted with a synthetic ⌘V through the same input hook that listens for the hotkey, so only Accessibility is needed. AppleScript, PowerShell and xdotool are kept as fallbacks.
 - **All the main settings.** Hotkeys, microphone and sensitivity, pause tuning, languages, cleanup toggles, custom vocabulary with "sounds like" aliases, snippets, per-app styles (casual in Slack, formal in Mail, verbatim in terminals and editors), provider and model choice, history, privacy.
-- **Pluggable speech-to-text.** OpenAI (`gpt-4o-transcribe`), Groq (`whisper-large-v3`), Deepgram (`nova-3`), ElevenLabs Scribe, or any OpenAI-compatible server (whisper.cpp, Speaches, LocalAI) for fully offline recognition.
+- **Pluggable speech-to-text.** OpenAI (`gpt-transcribe`), ElevenLabs Scribe v2, Groq (`whisper-large-v3`), Deepgram (`nova-3`), or any OpenAI-compatible server (whisper.cpp, Speaches, LocalAI) for fully offline recognition.
 - **Cleanup with Claude** through the official Anthropic SDK (Claude Opus 5 at low effort by default; Sonnet 5 and Haiku 4.5 selectable), with prompt caching and server-side refusal fallbacks enabled. An OpenAI-compatible endpoint (including Ollama) can be used instead, or cleanup can be switched off.
 
 ## Requirements
@@ -56,10 +56,12 @@ Signing/notarisation is left to your Apple Developer account (see `electron-buil
 
 | Need | Speech-to-text | Notes |
 |---|---|---|
-| Best all-round default | OpenAI `gpt-4o-transcribe` | Strong EN + NO, accepts vocabulary hints |
-| Best Norwegian | ElevenLabs Scribe | Most accurate on Norwegian in our testing, a little slower |
-| Lowest latency | Groq `whisper-large-v3` | Very fast, generous free tier |
+| Best for English + Norwegian | ElevenLabs `scribe_v2` | About 3 % word error rate on Norwegian (FLEURS) vs about 10 % for Whisper large-v3; top-tier English; vocabulary passed as keyterms |
+| Strong default if you already have an OpenAI key | OpenAI `gpt-transcribe` | Current OpenAI model; `gpt-4o-transcribe` and `whisper-1` shut down 26 Feb 2027 and are auto-upgraded in settings |
+| Lowest latency | Groq `whisper-large-v3-turbo` or Deepgram `nova-3` | A few hundred milliseconds, but weaker on Norwegian |
 | Offline / private | Custom → whisper.cpp server, Speaches, LocalAI | Point the base URL at `http://localhost:8080/v1` |
+
+Scribe v2 and gpt-transcribe both process audio at roughly 30x real time, so a ten-second dictation takes well under a second plus network time; the cleanup pass adds about the same again.
 
 For cleanup, Claude Opus 5 at **low** effort is the default per the model guidance used to build this. If you want it snappier, pick Sonnet 5 or Haiku 4.5 in Providers; quality on this task is close.
 
