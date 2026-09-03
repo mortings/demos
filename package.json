@@ -40,5 +40,10 @@
     "dist:win": "npm run build && electron-builder --win",
     "dist:linux": "npm run build && electron-builder --linux",
     "install:mac": "sh scripts/install-mac.sh"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mortings/flyt.git"
+  },
+  "homepage": "https://github.com/mortings/flyt"
 }

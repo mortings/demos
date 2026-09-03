@@ -1,6 +1,6 @@
 # Flyt
 
-Forgiving voice dictation for the whole desktop, in English and Norwegian. A personal Wispr Flow replacement that Morten (CPO at Bluestone PIM) uses daily on macOS and intends to grow into his personal layer over the OS. Electron + TypeScript; macOS first, Windows/Linux kept working.
+Forgiving voice dictation for the whole desktop, in English and Norwegian. A personal Wispr Flow replacement that Morten (CPO at Bluestone PIM) uses daily on macOS and intends to grow into his personal layer over the OS. Electron + TypeScript; macOS first, Windows/Linux kept working. This repository is the whole project; the local checkout is `~/Claude/flyt`.
 
 ## Read these before non-trivial work
 

@@ -28,6 +28,7 @@ Built with Electron + TypeScript so it runs on macOS (the main target), Windows 
 ## Run from source
 
 ```bash
+git clone https://github.com/mortings/flyt.git
 cd flyt
 npm install
 npm run build      # compiles main process, renderer and generates the icon
